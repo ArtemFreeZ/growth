@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Портфели проектов — панель</title>
+  <style>
+    :root{
+      --bg:#f5f7fb;--card:#fff;--ink:#152033;--muted:#65738a;--line:#dce3ee;
+      --accent:#175cd3;--accent-soft:#e8f1ff;--green:#067647;--green-soft:#e7f8ef;
+      --amber:#b54708;--amber-soft:#fff3e0;--red:#b42318;--red-soft:#fff0ee;
+      --shadow:0 10px 30px rgba(21,32,51,.08);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);
+      font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;line-height:1.45}
+    .page{max-width:1180px;margin:0 auto;padding:28px}
+
+    .toolbar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;gap:12px;
+      flex-wrap:wrap;margin:-28px -28px 18px;padding:12px 28px;
+      background:rgba(245,247,251,.96);border-bottom:1px solid var(--line);backdrop-filter:blur(10px)}
+    .toolbar-left,.toolbar-right{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button{border:1px solid var(--line);background:#fff;color:var(--ink);
+      border-radius:999px;padding:8px 14px;font-size:13px;font-weight:750;cursor:pointer;
+      box-shadow:0 2px 8px rgba(21,32,51,.05);font-family:inherit}
+    button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+    button:hover{border-color:var(--accent)}
+    button.primary:hover{background:#1450bd}
+    .status{color:var(--muted);font-size:12px;font-weight:700;max-width:560px}
+
+    .hero{background:linear-gradient(135deg,#0b3b8c 0%,#175cd3 52%,#2e90fa 100%);color:#fff;
+      border-radius:24px;padding:30px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .hero:after{content:"";position:absolute;right:-80px;top:-80px;width:280px;height:280px;
+      border-radius:50%;background:rgba(255,255,255,.12)}
+    .eyebrow{display:inline-flex;font-size:12px;font-weight:700;text-transform:uppercase;
+      letter-spacing:.08em;opacity:.92}
+    h1{margin:10px 0;font-size:clamp(26px,4vw,42px);line-height:1.06;letter-spacing:-.04em}
+    .hero p{max-width:820px;margin:0;color:rgba(255,255,255,.88);font-size:16px}
+
+    .breadcrumb{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 2px 0;font-size:13px}
+    .crumb{font-weight:750;color:var(--muted);background:none;border:none;box-shadow:none;
+      padding:4px 6px;border-radius:8px}
+    .crumb.link{cursor:pointer;color:var(--accent)}
+    .crumb.link:hover{background:var(--accent-soft)}
+    .crumb.current{color:var(--ink)}
+    .crumb-sep{color:var(--muted)}
+
+    .section{margin-top:18px;background:var(--card);border:1px solid var(--line);
+      border-radius:22px;padding:22px;box-shadow:var(--shadow)}
+    .section-title{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+    h2{margin:0;font-size:22px;letter-spacing:-.02em}
+    .tag{display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;
+      font-size:12px;font-weight:700;white-space:nowrap}
+    .blue{color:var(--accent);background:var(--accent-soft)}
+    .green{color:var(--green);background:var(--green-soft)}
+    .amber{color:var(--amber);background:var(--amber-soft)}
+    .red{color:var(--red);background:var(--red-soft)}
+    .muted{color:var(--muted)}
+
+    .grid-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+    /* Паспорта внутри портфеля — каждый на всю ширину, строкой */
+    #passportsGrid{grid-template-columns:1fr}
+
+    .nav-card{display:flex;align-items:center;gap:14px;text-align:left;width:100%;
+      padding:16px 18px;border:1px solid var(--line);border-radius:18px;background:#fff;
+      cursor:pointer;box-shadow:0 2px 8px rgba(21,32,51,.05);transition:.15s;
+      font:inherit;color:inherit}
+    .nav-card:hover{border-color:var(--accent);box-shadow:var(--shadow);transform:translateY(-1px)}
+    .nav-card-icon{flex:0 0 auto;width:46px;height:46px;border-radius:14px;
+      display:flex;align-items:center;justify-content:center;font-size:22px;
+      background:var(--accent-soft)}
+    .nav-card.passport .nav-card-icon{background:var(--green-soft)}
+    .nav-card-body{flex:1 1 auto;min-width:0}
+    .nav-card-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;
+      letter-spacing:.06em;color:var(--accent);margin-bottom:3px;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .nav-card-title{font-size:15px;font-weight:800;letter-spacing:-.01em;
+      line-height:1.25;margin-bottom:4px}
+    .nav-card-sub{font-size:12px;color:var(--muted);font-weight:600;
+      overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .nav-card-side{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+    .nav-card-arrow{font-size:12px;font-weight:800;color:var(--accent);white-space:nowrap}
+
+    /* Карточка-кнопка создания */
+    .add-card{border:2px dashed #b9c8e0;background:#fbfdff}
+    .add-card:hover{border-color:var(--accent);background:var(--accent-soft);transform:translateY(-1px)}
+    .add-card .nav-card-icon{background:var(--accent-soft);color:var(--accent);
+      font-size:26px;font-weight:800}
+    .add-card .nav-card-title{color:var(--accent)}
+
+    .back-row{grid-column:1 / -1;justify-self:start;border-radius:999px;
+      padding:8px 14px;font-size:13px;font-weight:750}
+    .back-row:hover{border-color:var(--accent);color:var(--accent)}
+
+    .empty{text-align:center;color:var(--muted)}
+    .empty h2{color:var(--ink);margin-bottom:8px}
+    .empty p{margin:10px auto;max-width:640px}
+    .empty .primary{margin:6px 0 4px}
+    .empty .steps{display:inline-block;text-align:left;margin:14px auto 0;padding-left:20px;max-width:640px}
+    .empty .steps li{margin:7px 0}
+    .empty code{background:var(--accent-soft);color:var(--accent);
+      padding:2px 6px;border-radius:6px;font-size:13px}
+
+    .footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
+
+    @media(max-width:760px){
+      .page{padding:16px}
+      .toolbar{margin:-16px -16px 16px;padding:12px 16px}
+      .grid-cards{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button id="pickBtn" class="primary" type="button">Выбрать рабочую папку</button>
+      <button id="connectBtn" type="button" style="display:none">Подключить папку</button>
+      <button id="refreshBtn" type="button" style="display:none">Обновить</button>
+    </div>
+    <div class="toolbar-right"><span id="status" class="status">Запуск...</span></div>
+  </div>
+
+  <section class="hero">
+    <div class="eyebrow">Project Passports · Portfolio Navigator</div>
+    <h1 id="heroTitle">Портфели проектов</h1>
+    <p id="heroSubtitle">Панель для просмотра, создания и редактирования портфелей и паспортов проектов.</p>
+  </section>
+
+  <nav id="breadcrumb" class="breadcrumb" style="display:none"></nav>
+
+  <section id="infoState" class="section empty"></section>
+
+  <section id="portfoliosView" class="section" style="display:none">
+    <div class="section-title">
+      <h2>Портфели проектов</h2>
+      <span class="tag blue" id="portfoliosCount"></span>
+    </div>
+    <div id="portfoliosGrid" class="grid-cards"></div>
+  </section>
+
+  <section id="passportsView" class="section" style="display:none">
+    <div class="section-title">
+      <h2 id="passportsTitle">Паспорта проектов</h2>
+      <span class="tag green" id="passportsCount"></span>
+    </div>
+    <div id="passportsGrid" class="grid-cards"></div>
+  </section>
+
+  <div class="footer">SMK Group · Project Passport · Portfolio Navigator</div>
+</main>
+
+<script>
+/* =====================================================================
+   Панель портфелей проектов.
+   Работает через File System Access API — поэтому страницу нужно
+   открывать запускателем start_panel.bat (через http://localhost),
+   а не двойным кликом по html-файлу.
+   ===================================================================== */
+
+/* ===== Конфигурация ===== */
+const EDITOR_FILE = 'yieldigo_passport_stable_editor.html';
+const HANDOFF_KEY = 'passport_handoff';
+const IDB_NAME    = 'portfolio_panel_db';
+const IDB_STORE   = 'handles';
+const IDB_KEY     = 'rootHandle';
+
+/* ===== Эталонный шаблон паспорта (копируется при создании нового) ===== */
+const REFERENCE_YAML = `eyebrow: Project Passport · Pricing Transformation
+title: Внедрение системы рекомендаций и управления ценами Yieldigo
+subtitle: >-
+  Чистая версия паспорта проекта для согласования пилота: фокус на управляемом
+  ценообразовании, снижении ручных ошибок, повышении маржинальности и
+  масштабировании pricing-процесса без Excel как основного операционного
+  контура.
+
+meta:
+  - label: Статус
+    value: Черновик для согласования
+  - label: Версия / дата
+    value: v1.0 · 01.04.2026
+  - label: Контур пилота
+    value: Dry Food · Розница · Cash&Carry
+  - label: Решение
+    value: Запуск пилота Yieldigo
+
+sections:
+  identification:
+    title: 1. Идентификация проекта
+    tag: Project Setup
+  summary:
+    title: 2. Executive Summary
+    tag: Для решения о запуске
+  criteria:
+    title: 3. Критерии успеха и остановки
+    tag: Pilot Control
+  gates:
+    title: 4. Stage Gate модель
+    tag: Governance
+  documents:
+    title: 5. Базовый пакет проектной документации
+    tag: Navigation
+  questions:
+    title: 6. Вопросы перед запуском
+    tag: Open Points
+
+projectInfo:
+  - label: Название проекта
+    value: Внедрение программы рекомендаций и ведения цен Yieldigo
+  - label: Цель
+    value: |-
+      Этап I: внедрить инструмент управления и рекомендации регулярных цен.
+      Этап II: внедрить механику оптовых цен / multibuy.
+      Этап III: внедрить модуль акционных цен.
+  - label: Объект пилота
+    value: >-
+      Розница: магазины «Рулька» и «Щедрик». Опт: Cash&Carry Охтирка 287.
+      Категории: Dry Food.
+  - label: Горизонт пилота
+    value: Требует финального согласования после утверждения плана пилота и состава KPI.
+
+rolesInfo:
+  - label: Инициатор
+    value: Парамонов Денис
+  - label: Заказчик
+    value: Мартынов Денис
+  - label: Спонсор
+    value: Парамонов Денис
+  - label: Владелец проекта
+    value: Пашко Ольга
+  - label: Ментор
+    value: Пашко Ольга
+  - label: PMO
+    value: Виталий Воробьёв
+  - label: РМ
+    value: Пашко Ольга
+
+summaryCards:
+  - title: Проблема
+    text: >-
+      Текущий процесс управления ценами недостаточно системный: цены меняются
+      несвоевременно, часть прибыли теряется, выравнивание под конкурентов не
+      контролируется, ручные операции создают ошибки, а причины изменения цены
+      и результат сложно отследить.
+  - title: Гипотеза
+    text: >-
+      Если внедрить Yieldigo как инструмент рекомендаций и управления ценами,
+      процесс станет прозрачнее, сократятся ручные ошибки, повысится выторг,
+      маржинальность и лояльность клиентов, а масштабирование бизнеса станет
+      управляемее.
+  - title: Решение сейчас
+    text: >-
+      Согласовать запуск пилота Yieldigo в утверждённом контуре Dry Food,
+      определить роли владельцев pricing-процесса, подтвердить состав данных,
+      KPI пилота и правила перехода к масштабированию после подтверждённого
+      эффекта.
+    decision: true
+
+effectCards:
+  - title: Ожидаемый эффект
+    list:
+      - Снижение количества ошибок при смене цен.
+      - Рекомендация оптимальных цен системой.
+      - Автоматизированное выравнивание под конкурентов для выбранных позиций.
+      - Снижение нагрузки на категорийных менеджеров.
+      - "Появление прозрачной истории: кто, что и зачем изменил."
+      - Рост маржинальности и клиентской лояльности.
+      - Снижение нагрузки на торговые точки при смене ценников.
+  - title: Ключевые риски
+    list:
+      - Низкое качество исходных данных по ценам, продажам и истории изменений.
+      - Неустойчивый процесс ведения номенклатуры, складов и ассортимента.
+      - Отсутствие утверждённых политик акционной деятельности.
+      - Отсутствие утверждённых политик оптовых продаж.
+      - Несогласованная методика мониторинга цен конкурентов.
+      - Сложности синхронизации цен между Fresh и Dry Food.
+  - title: Следующий шаг
+    text: >-
+      Принять решение о запуске Yieldigo для пилотного контура Dry Food,
+      утвердить KPI, ответственных, состав данных, календарный план и критерии
+      масштабирования.
+
+criteriaCards:
+  - title: Success Criteria
+    text: >-
+      Для форматов «Рулька», «Щедрик» и Cash&Carry ценообразование переводится
+      на управляемую модель через Yieldigo. Система показывает стабильную работу,
+      рекомендации применимы бизнесом, KPI пилота достигнуты, а процесс не
+      зависит от Excel как основного инструмента управления.
+  - title: Stop Criteria
+    text: >-
+      Новая модель приводит к снижению прибыльности, создаёт неконтролируемые
+      ошибки в ценах, не принимается бизнес-пользователями или не может быть
+      поддержана из-за качества данных и интеграционных ограничений.
+
+gates:
+  - code: Gate 0
+    title: Гипотеза подтверждена
+    description: Есть паспорт проекта, определён владелец и заказчик, согласован пилотный контур.
+    owner: Заказчик / Product Owner / PMO
+  - code: Gate 1
+    title: Пилот согласован
+    description: Определены пилотные ТТ, регион, роли, KPI пилота и состав данных.
+    owner: Спонсор / Владелец проекта
+  - code: Gate 2
+    title: Интеграция проведена
+    description: Данные стабильно передаются, принимаются и проходят контроль качества.
+    owner: IT
+  - code: Gate 3
+    title: Пилот multibuy запущен
+    description: >-
+      Запущен модуль multibuy, проведено обучение, принято решение:
+      масштабировать, доработать или остановить.
+    owner: Владелец проекта / PMO / IT
+  - code: Gate 4
+    title: Пилот регулярных цен запущен
+    description: Данные очищены, модуль работает, KPI пилота отслеживаются и подтверждаются.
+    owner: Спонсор / Заказчик / Владелец проекта
+  - code: Gate 5
+    title: Регулярное ценообразование масштабировано
+    description: >-
+      Запущено регулярное ценообразование на всех согласованных магазинах,
+      принято решение двигаться дальше.
+    owner: Спонсор / Заказчик
+  - code: Gate 6
+    title: Интеграция акционного модуля
+    description: Данные по акциям стабильно передаются, принимаются и контролируются.
+    owner: IT
+  - code: Gate 7
+    title: Пилот акционных цен
+    description: >-
+      Запущен пилот акционных цен, принято решение: масштабировать, доработать
+      или остановить.
+    owner: Спонсор / Заказчик
+  - code: Gate 8
+    title: Модуль акций масштабирован
+    description: Акционный модуль запущен для всех согласованных магазинов и категорий.
+    owner: Спонсор / Заказчик
+
+documents:
+  listTitle: Документы проекта
+  list:
+    - Заявка на инициативу
+    - Карта бизнес-требований
+    - Экономический эффект
+    - Risks & Assumptions
+    - Decision Log
+    - BRD Level 1 — бизнес-контур процесса
+    - BRD Level 2 — процессные сценарии
+    - BRD Level 3 — сущности и модель данных
+    - AS-IS текущего процесса управления ценами
+    - План пилота
+  conclusionTitle: Главный вывод
+  conclusionText: >-
+    Текущий процесс управления ценообразованием сложен с точки зрения
+    системности, контроля и масштабирования. Yieldigo должен стать инструментом
+    перехода к управляемому pricing-процессу с прозрачными правилами, KPI,
+    ответственными ролями и контролем результата.
+
+questions:
+  - Подтверждаем ли мы эффективность системы после тестовых запусков?
+  - Как будет осуществляться управление акциями до запуска модуля акций?
+  - Какие KPI и baseline фиксируем как обязательные для решения о масштабировании?
+
+footer: SMK Group · Project Passport · Yieldigo Pricing System · Editable YAML version
+`;
+
+/* ===== Состояние ===== */
+let rootHandle = null;          // FileSystemDirectoryHandle рабочей папки
+let savedHandle = null;         // восстановленный из IndexedDB (до выдачи доступа)
+let tree = { rootName: '', portfolios: [], rootPassports: [] };
+/* portfolio: { name, dirHandle, passports:[passport] }
+   passport:  { portfolio, fileName, relPath, fileHandle, yamlText,
+                title, eyebrow, status, version, error } */
+let currentView = 'info';       // 'info' | 'portfolios' | 'passports'
+let currentPortfolioIdx = null; // индекс портфеля на экране паспортов (-1 = вне портфелей)
+let currentPortfolioName = null;
+
+/* ===== Короткие ссылки на узлы ===== */
+const $ = id => document.getElementById(id);
+const pickBtn = $('pickBtn'), connectBtn = $('connectBtn'), refreshBtn = $('refreshBtn');
+const infoState = $('infoState'), portfoliosView = $('portfoliosView'), passportsView = $('passportsView');
+const portfoliosGrid = $('portfoliosGrid'), passportsGrid = $('passportsGrid');
+const breadcrumb = $('breadcrumb');
+
+/* ===== Утилиты ===== */
+function esc(v){
+  return String(v == null ? '' : v)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+function show(el){ el.style.display = ''; }
+function hide(el){ el.style.display = 'none'; }
+function status(m){ $('status').innerText = m; }
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, a1 = a % 10;
+  if (a > 10 && a < 20) return many;
+  if (a1 > 1 && a1 < 5) return few;
+  if (a1 === 1) return one;
+  return many;
+}
+function passportsWord(n){ return n + ' ' + plural(n, 'паспорт', 'паспорта', 'паспортов'); }
+function byTitle(a, b){ return String(a.title).localeCompare(String(b.title), 'ru'); }
+function yamlScalar(s){
+  s = String(s);
+  if (s === '' || /^\s|\s$/.test(s) || /[:#\[\]{},&*!|>'"%@`]/.test(s)) return JSON.stringify(s);
+  return s;
+}
+function badName(s){ return /[\\\/:*?"<>|]/.test(s); }
+
+/* ===== YAML-парсер (совместим с редактором паспорта) ===== */
+function parseData(text){
+  const s = String(text || '').trim();
+  if (!s) throw new Error('Файл пустой');
+  try { return JSON.parse(s); } catch(e) {}
+  return parseYaml(s);
+}
+function parseYaml(text){
+  const lines = text.replace(/\r/g,'').split('\n');
+  let i = 0;
+  const ind = l => (l.match(/^ */) || [''])[0].length;
+  function strip(l){
+    let q = null;
+    for (let n = 0; n < l.length; n++){
+      const c = l[n];
+      if ((c === '"' || c === "'") && l[n-1] !== '\\') q = q === c ? null : (q || c);
+      if (c === '#' && !q) return l.slice(0, n);
+    }
+    return l;
+  }
+  function kv(s){ const p = s.indexOf(':'); return p < 0 ? null : { key: s.slice(0,p).trim(), value: s.slice(p+1).trim() }; }
+  function scalar(v){
+    const s = String(v || '').trim();
+    if (s === 'true') return true;
+    if (s === 'false') return false;
+    if (s === 'null') return null;
+    if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) return s.slice(1,-1);
+    return s;
+  }
+  function multi(level, style){
+    const a = [];
+    while (i < lines.length){
+      const raw = lines[i];
+      if (!raw.trim()){ a.push(''); i++; continue; }
+      if (ind(raw) < level) break;
+      a.push(raw.slice(level)); i++;
+    }
+    return style.startsWith('>') ? a.join(' ').trim() : a.join('\n').trim();
+  }
+  function block(level){
+    let mode = null;
+    const obj = {}, arr = [];
+    while (i < lines.length){
+      let raw = strip(lines[i]);
+      if (!raw.trim()){ i++; continue; }
+      const levelNow = ind(raw);
+      if (levelNow < level) break;
+      if (levelNow > level) break;
+      const line = raw.slice(level);
+      if (line.startsWith('- ')){
+        mode = mode || 'array';
+        const itemText = line.slice(2).trim();
+        i++;
+        if (!itemText){ arr.push(block(level + 2)); continue; }
+        const first = kv(itemText);
+        if (!first){ arr.push(scalar(itemText)); continue; }
+        const item = {};
+        if (['|','|-','>','>-'].includes(first.value)) item[first.key] = multi(level + 2, first.value);
+        else if (first.value) item[first.key] = scalar(first.value);
+        else item[first.key] = block(level + 2);
+        while (i < lines.length){
+          let raw2 = strip(lines[i]);
+          if (!raw2.trim()){ i++; continue; }
+          const ind2 = ind(raw2);
+          if (ind2 !== level + 2) break;
+          const line2 = raw2.slice(ind2);
+          if (line2.startsWith('- ')) break;
+          const pair = kv(line2);
+          if (!pair) break;
+          i++;
+          if (['|','|-','>','>-'].includes(pair.value)) item[pair.key] = multi(ind2 + 2, pair.value);
+          else if (pair.value) item[pair.key] = scalar(pair.value);
+          else item[pair.key] = block(ind2 + 2);
+        }
+        arr.push(item);
+      } else {
+        mode = mode || 'object';
+        const pair = kv(line);
+        if (!pair) throw new Error('Не могу прочитать строку: ' + raw);
+        i++;
+        if (['|','|-','>','>-'].includes(pair.value)) obj[pair.key] = multi(level + 2, pair.value);
+        else if (pair.value) obj[pair.key] = scalar(pair.value);
+        else obj[pair.key] = block(level + 2);
+      }
+    }
+    return mode === 'array' ? arr : obj;
+  }
+  return block(0);
+}
+
+/* ===== Извлечение шапки паспорта ===== */
+function extractInfo(text, fileName){
+  try {
+    const d = parseData(text);
+    const title = (d && typeof d.title === 'string' && d.title.trim()) ? d.title.trim() : fileName;
+    const eyebrow = (d && typeof d.eyebrow === 'string') ? d.eyebrow.trim() : '';
+    let stat = '', ver = '';
+    if (d && Array.isArray(d.meta)){
+      d.meta.forEach(m => {
+        if (!m || typeof m !== 'object') return;
+        const l = String(m.label || '').toLowerCase();
+        if (l.indexOf('статус') !== -1) stat = String(m.value || '').trim();
+        if (l.indexOf('верси') !== -1) ver = String(m.value || '').trim();
+      });
+    }
+    return { title: title, eyebrow: eyebrow, status: stat, version: ver, error: false };
+  } catch(err){
+    return { title: fileName, eyebrow: '', status: '', version: '', error: true };
+  }
+}
+
+/* ===== IndexedDB: хранение handle рабочей папки между сессиями ===== */
+function idbOpen(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(IDB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+function idbSet(key, val){
+  return idbOpen().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(val, key);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror = () => { db.close(); reject(tx.error); };
+  }));
+}
+function idbGet(key){
+  return idbOpen().then(db => new Promise((resolve, reject) => {
+    const tx = db.transaction(IDB_STORE, 'readonly');
+    const r = tx.objectStore(IDB_STORE).get(key);
+    r.onsuccess = () => { db.close(); resolve(r.result); };
+    r.onerror = () => { db.close(); reject(r.error); };
+  }));
+}
+
+/* ===== Доступ к папке ===== */
+async function safeQueryPerm(handle){
+  try { return await handle.queryPermission({ mode: 'readwrite' }); }
+  catch(e){ return 'prompt'; }
+}
+async function pickRoot(){
+  let handle;
+  try {
+    handle = await window.showDirectoryPicker({ mode: 'readwrite', id: 'portfolioPanelRoot' });
+  } catch(err){
+    if (err && err.name === 'AbortError') return;
+    alert('Не удалось открыть папку: ' + (err && err.message ? err.message : err));
+    return;
+  }
+  rootHandle = handle;
+  savedHandle = handle;
+  try { await idbSet(IDB_KEY, handle); } catch(e){}
+  status('Сканирование папки...');
+  await refresh();
+  goPortfolios();
+  status('Рабочая папка подключена: ' + tree.rootName);
+}
+async function onConnect(){
+  if (!savedHandle) return;
+  let perm;
+  try { perm = await savedHandle.requestPermission({ mode: 'readwrite' }); }
+  catch(e){ perm = 'denied'; }
+  if (perm === 'granted'){
+    rootHandle = savedHandle;
+    status('Сканирование папки...');
+    await refresh();
+    goPortfolios();
+    status('Рабочая папка подключена: ' + tree.rootName);
+  } else {
+    status('Доступ к папке не выдан. Нажмите «Подключить папку» ещё раз или выберите папку заново.');
+  }
+}
+async function onRefresh(){
+  if (!rootHandle) return;
+  status('Сканирование папки...');
+  await refresh();
+  if (currentView === 'passports'){
+    if (currentPortfolioIdx === -1){
+      goPassports(-1);
+    } else {
+      const idx = tree.portfolios.findIndex(p => p.name === currentPortfolioName);
+      if (idx >= 0) goPassports(idx); else goPortfolios();
+    }
+  } else {
+    goPortfolios();
+  }
+  status('Обновлено: ' + tree.rootName);
+}
+
+/* ===== Сканирование структуры папок ===== */
+async function refresh(){
+  if (!rootHandle) return;
+  try {
+    tree = await scanTree(rootHandle);
+  } catch(err){
+    status('Ошибка чтения папки: ' + (err && err.message ? err.message : err));
+  }
+}
+async function scanTree(root){
+  const rootName = root.name || 'Рабочая папка';
+  const portfolios = [];
+  const rootPassports = [];
+  for await (const entry of root.values()){
+    if (entry.kind === 'directory'){
+      const passports = [];
+      try {
+        for await (const f of entry.values()){
+          if (f.kind === 'file' && /\.ya?ml$/i.test(f.name)){
+            passports.push(await readPassport(f, rootName, entry.name, f.name));
+          }
+        }
+      } catch(e){ /* нет доступа к подпапке — пропускаем */ }
+      passports.sort(byTitle);
+      portfolios.push({ name: entry.name, dirHandle: entry, passports: passports });
+    } else if (entry.kind === 'file' && /\.ya?ml$/i.test(entry.name)){
+      rootPassports.push(await readPassport(entry, rootName, '', entry.name));
+    }
+  }
+  portfolios.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+  rootPassports.sort(byTitle);
+  return { rootName: rootName, portfolios: portfolios, rootPassports: rootPassports };
+}
+async function readPassport(fileHandle, rootName, portfolio, fileName){
+  let text = '';
+  try { const file = await fileHandle.getFile(); text = await file.text(); }
+  catch(e){ text = ''; }
+  const info = extractInfo(text, fileName);
+  return {
+    portfolio: portfolio,
+    fileName: fileName,
+    relPath: rootName + '/' + (portfolio ? portfolio + '/' : '') + fileName,
+    fileHandle: fileHandle,
+    yamlText: text,
+    title: info.title,
+    eyebrow: info.eyebrow,
+    status: info.status,
+    version: info.version,
+    error: info.error
+  };
+}
+
+/* ===== Создание портфеля ===== */
+async function createPortfolio(){
+  if (!rootHandle) return;
+  const name = (prompt('Название нового портфеля (так будет называться папка):') || '').trim();
+  if (!name) return;
+  if (badName(name)){
+    alert('Имя папки не должно содержать символы \\ / : * ? " < > |');
+    return;
+  }
+  try {
+    await rootHandle.getDirectoryHandle(name, { create: true });
+  } catch(err){
+    alert('Не удалось создать портфель: ' + (err && err.message ? err.message : err));
+    return;
+  }
+  await refresh();
+  const idx = tree.portfolios.findIndex(p => p.name === name);
+  if (idx >= 0) goPassports(idx); else goPortfolios();
+  status('Создан портфель «' + name + '»');
+}
+
+/* ===== Создание паспорта (копия эталонного шаблона) ===== */
+async function createPassport(portfolioIdx){
+  if (portfolioIdx == null || portfolioIdx < 0) return;
+  const portfolio = tree.portfolios[portfolioIdx];
+  if (!portfolio || !portfolio.dirHandle) return;
+
+  const projectName = (prompt('Название проекта (попадёт в заголовок паспорта):') || '').trim();
+  if (!projectName) return;
+
+  let fileName = (prompt('Имя файла паспорта:', 'passport.yaml') || '').trim();
+  if (!fileName) return;
+  if (!/\.ya?ml$/i.test(fileName)) fileName += '.yaml';
+  if (badName(fileName)){
+    alert('Имя файла не должно содержать символы \\ / : * ? " < > |');
+    return;
+  }
+
+  let exists = false;
+  try { await portfolio.dirHandle.getFileHandle(fileName); exists = true; } catch(e){}
+  if (exists && !confirm('Файл «' + fileName + '» уже есть в портфеле «' + portfolio.name + '». Перезаписать его?')) return;
+
+  const yamlText = REFERENCE_YAML.replace(/^title:.*$/m, 'title: ' + yamlScalar(projectName));
+  try {
+    const fh = await portfolio.dirHandle.getFileHandle(fileName, { create: true });
+    const writable = await fh.createWritable();
+    await writable.write(yamlText);
+    await writable.close();
+  } catch(err){
+    alert('Не удалось создать паспорт: ' + (err && err.message ? err.message : err));
+    return;
+  }
+  await refresh();
+  const idx = tree.portfolios.findIndex(p => p.name === portfolio.name);
+  if (idx >= 0) goPassports(idx);
+  status('Создан паспорт «' + projectName + '» в портфеле «' + portfolio.name + '»');
+}
+
+/* ===== Экран 1: портфели ===== */
+function goPortfolios(){
+  currentView = 'portfolios';
+  currentPortfolioIdx = null;
+  currentPortfolioName = null;
+  setToolbar('connected');
+  hide(infoState); hide(passportsView); show(portfoliosView);
+
+  breadcrumb.style.display = '';
+  breadcrumb.innerHTML = '<span class="crumb current">📁 ' + esc(tree.rootName) + '</span>';
+
+  $('heroTitle').textContent = 'Портфели проектов';
+  $('heroSubtitle').textContent =
+    'Рабочая папка: ' + tree.rootName + '. Выберите портфель или создайте новый.';
+
+  $('portfoliosCount').textContent =
+    tree.portfolios.length + ' ' + plural(tree.portfolios.length, 'портфель', 'портфеля', 'портфелей');
+
+  let html = addCard('Новый портфель', 'Создать папку-портфель в рабочей папке', 'new-portfolio');
+  tree.portfolios.forEach((p, idx) => {
+    html += portfolioCard(p.name, p.passports.length, idx, false);
+  });
+  if (tree.rootPassports.length){
+    html += portfolioCard('Паспорта вне портфелей', tree.rootPassports.length, -1, true);
+  }
+
+  portfoliosGrid.innerHTML = html;
+  const np = portfoliosGrid.querySelector('[data-action="new-portfolio"]');
+  if (np) np.addEventListener('click', createPortfolio);
+  portfoliosGrid.querySelectorAll('[data-portfolio]').forEach(el => {
+    el.addEventListener('click', () => goPassports(Number(el.dataset.portfolio)));
+  });
+
+  window.scrollTo(0, 0);
+}
+
+function portfolioCard(name, count, idx, isRoot){
+  return '<button class="nav-card" data-portfolio="' + idx + '" type="button">' +
+    '<div class="nav-card-icon">' + (isRoot ? '📄' : '💼') + '</div>' +
+    '<div class="nav-card-body">' +
+      '<div class="nav-card-title">' + esc(name) + '</div>' +
+      '<div class="nav-card-sub">' + passportsWord(count) + '</div>' +
+    '</div>' +
+    '<div class="nav-card-side"><span class="nav-card-arrow">Открыть →</span></div>' +
+  '</button>';
+}
+
+function addCard(title, sub, action){
+  return '<button class="nav-card add-card" data-action="' + action + '" type="button">' +
+    '<div class="nav-card-icon">+</div>' +
+    '<div class="nav-card-body">' +
+      '<div class="nav-card-title">' + esc(title) + '</div>' +
+      '<div class="nav-card-sub">' + esc(sub) + '</div>' +
+    '</div>' +
+  '</button>';
+}
+
+/* ===== Экран 2: паспорта внутри портфеля ===== */
+function goPassports(idx){
+  const isRoot = idx === -1;
+  if (!isRoot && !tree.portfolios[idx]){ goPortfolios(); return; }
+  const list = isRoot ? tree.rootPassports : tree.portfolios[idx].passports;
+  const name = isRoot ? 'Паспорта вне портфелей' : tree.portfolios[idx].name;
+
+  currentView = 'passports';
+  currentPortfolioIdx = idx;
+  currentPortfolioName = isRoot ? null : name;
+  setToolbar('connected');
+  hide(infoState); hide(portfoliosView); show(passportsView);
+
+  breadcrumb.style.display = '';
+  breadcrumb.innerHTML =
+    '<button class="crumb link" id="crumbRoot" type="button">📁 ' + esc(tree.rootName) + '</button>' +
+    '<span class="crumb-sep">›</span>' +
+    '<span class="crumb current">' + esc(name) + '</span>';
+  $('crumbRoot').addEventListener('click', goPortfolios);
+
+  $('heroTitle').textContent = name;
+  $('heroSubtitle').textContent = isRoot
+    ? 'YAML-файлы, которые лежат прямо в рабочей папке, вне портфелей.'
+    : 'Паспорта проектов в портфеле. Откройте паспорт для редактирования или создайте новый.';
+  $('passportsCount').textContent = passportsWord(list.length);
+
+  let html = '<button class="back-row" id="backRow" type="button">← Назад к портфелям</button>';
+  if (!isRoot){
+    html += addCard('Новый паспорт', 'Создать паспорт из эталонного шаблона', 'new-passport');
+  }
+  list.forEach((p, i) => { html += passportCard(p, i); });
+  if (!list.length && isRoot){
+    html += '<p class="muted">В рабочей папке нет YAML-файлов вне портфелей.</p>';
+  } else if (!list.length){
+    html += '<p class="muted">В этом портфеле пока нет паспортов. ' +
+            'Нажмите «Новый паспорт», чтобы создать первый.</p>';
+  }
+
+  passportsGrid.innerHTML = html;
+  $('backRow').addEventListener('click', goPortfolios);
+  const npass = passportsGrid.querySelector('[data-action="new-passport"]');
+  if (npass) npass.addEventListener('click', () => createPassport(idx));
+  passportsGrid.querySelectorAll('[data-passport]').forEach(el => {
+    el.addEventListener('click', () => openPassport(list[Number(el.dataset.passport)]));
+  });
+
+  window.scrollTo(0, 0);
+}
+
+function passportCard(p, i){
+  let badge = '';
+  if (p.error) badge = '<span class="tag red">ошибка YAML</span>';
+  else if (p.status) badge = '<span class="tag amber">' + esc(p.status) + '</span>';
+
+  return '<button class="nav-card passport" data-passport="' + i + '" type="button">' +
+    '<div class="nav-card-icon">📋</div>' +
+    '<div class="nav-card-body">' +
+      (p.eyebrow ? '<div class="nav-card-eyebrow">' + esc(p.eyebrow) + '</div>' : '') +
+      '<div class="nav-card-title">' + esc(p.title) + '</div>' +
+      (p.version ? '<div class="nav-card-sub">' + esc(p.version) + '</div>' : '') +
+    '</div>' +
+    '<div class="nav-card-side">' + badge +
+      '<span class="nav-card-arrow">Открыть →</span>' +
+    '</div>' +
+  '</button>';
+}
+
+/* ===== Передача паспорта в редактор ===== */
+async function openPassport(p){
+  let latestText = p.yamlText || '';
+  try {
+    const file = await p.fileHandle.getFile();
+    latestText = await file.text();
+    p.yamlText = latestText;
+  } catch(err){
+    alert('Не удалось прочитать актуальный YAML перед открытием редактора: ' + (err && err.message ? err.message : err));
+    return;
+  }
+  const payload = {
+    portfolio: p.portfolio,
+    fileName: p.fileName,
+    relPath: p.relPath,
+    yamlText: latestText,
+    ts: Date.now()
+  };
+  try {
+    localStorage.setItem(HANDOFF_KEY, JSON.stringify(payload));
+  } catch(err){
+    alert('Не удалось передать паспорт в редактор: ' + (err && err.message ? err.message : err));
+    return;
+  }
+  status('Открываю паспорт «' + p.title + '» в редакторе...');
+  const w = window.open('./' + EDITOR_FILE, '_blank');
+  if (!w){
+    alert('Браузер заблокировал открытие новой вкладки.\nРазрешите всплывающие окна для этой страницы и попробуйте снова.');
+  }
+}
+
+/* ===== Тулбар и информационные экраны ===== */
+function setToolbar(state){
+  pickBtn.style.display    = (state === 'connected') ? 'none' : '';
+  connectBtn.style.display = (state === 'needPermission') ? '' : 'none';
+  refreshBtn.style.display = (state === 'connected') ? '' : 'none';
+}
+function renderInfo(kind, name){
+  currentView = 'info';
+  show(infoState);
+  hide(portfoliosView);
+  hide(passportsView);
+  breadcrumb.style.display = 'none';
+  $('heroTitle').textContent = 'Портфели проектов';
+
+  if (kind === 'unsupported'){
+    setToolbar('none');
+    pickBtn.style.display = 'none';
+    $('heroSubtitle').textContent = 'Откройте панель через запускатель — тогда станет доступно создание и чтение папок.';
+    infoState.innerHTML =
+      '<h2>Откройте панель через запускатель</h2>' +
+      '<p>Эта панель напрямую читает и создаёт папки и файлы на диске. Такой доступ браузер даёт ' +
+      'только в <strong>Chrome</strong> или <strong>Edge</strong> и только когда страница открыта ' +
+      'через локальный сервер, а не двойным кликом по файлу.</p>' +
+      '<ol class="steps">' +
+        '<li>Закройте эту вкладку.</li>' +
+        '<li>В рабочей папке дважды кликните по файлу <code>start_panel.bat</code>.</li>' +
+        '<li>Панель сама откроется по адресу <code>http://localhost:8765/portfolio_panel.html</code> — работайте в ней.</li>' +
+      '</ol>';
+    return;
+  }
+
+  if (kind === 'needPermission'){
+    setToolbar('needPermission');
+    connectBtn.textContent = 'Подключить папку «' + name + '»';
+    $('heroSubtitle').textContent = 'Рабочая папка уже выбиралась раньше — нужно только заново разрешить доступ.';
+    infoState.innerHTML =
+      '<h2>Подключить рабочую папку</h2>' +
+      '<p>Папка <strong>«' + esc(name) + '»</strong> уже выбиралась ранее. Нажмите кнопку ниже, ' +
+      'чтобы снова разрешить панели доступ к ней — повторно искать папку не нужно.</p>' +
+      '<p><button id="infoConnectBtn" class="primary" type="button">Подключить папку «' + esc(name) + '»</button></p>' +
+      '<p class="muted">Чтобы указать другую папку — нажмите «Выбрать рабочую папку» вверху.</p>';
+    const b = $('infoConnectBtn');
+    if (b) b.addEventListener('click', onConnect);
+    return;
+  }
+
+  /* kind === 'none' */
+  setToolbar('none');
+  $('heroSubtitle').textContent = 'Укажите рабочую папку с портфелями проектов — панель запомнит её.';
+  infoState.innerHTML =
+    '<h2>Рабочая папка не выбрана</h2>' +
+    '<p>Укажите папку, в которой лежат портфели проектов (и сам файл панели). ' +
+    'Панель запомнит её — выбирать нужно только один раз.</p>' +
+    '<p><button id="infoPickBtn" class="primary" type="button">Выбрать рабочую папку</button></p>' +
+    '<ol class="steps">' +
+      '<li>Подпапки рабочей папки — это <strong>портфели проектов</strong>.</li>' +
+      '<li>YAML-файлы внутри портфеля — это <strong>паспорта проектов</strong>.</li>' +
+      '<li>Кнопка <strong>«+ Новый портфель»</strong> создаёт папку-портфель, ' +
+          '<strong>«+ Новый паспорт»</strong> — паспорт из эталонного шаблона.</li>' +
+    '</ol>';
+  const b = $('infoPickBtn');
+  if (b) b.addEventListener('click', pickRoot);
+}
+
+/* ===== Запуск ===== */
+async function init(){
+  pickBtn.addEventListener('click', pickRoot);
+  connectBtn.addEventListener('click', onConnect);
+  refreshBtn.addEventListener('click', onRefresh);
+  window.addEventListener('error', e => status('Ошибка JS: ' + e.message));
+  window.addEventListener('focus', async () => {
+    if (rootHandle && currentView !== 'info'){
+      try { await onRefresh(); } catch(e){}
+    }
+  });
+
+  if (!window.showDirectoryPicker){
+    renderInfo('unsupported');
+    status('Откройте панель через запускатель start_panel.bat');
+    return;
+  }
+
+  let handle = null;
+  try { handle = await idbGet(IDB_KEY); } catch(e){ handle = null; }
+
+  if (handle){
+    savedHandle = handle;
+    const perm = await safeQueryPerm(handle);
+    if (perm === 'granted'){
+      rootHandle = handle;
+      status('Сканирование папки...');
+      await refresh();
+      goPortfolios();
+      status('Рабочая папка подключена: ' + tree.rootName);
+    } else {
+      renderInfo('needPermission', handle.name);
+      status('Папка «' + handle.name + '» выбрана ранее — нажмите «Подключить папку».');
+    }
+  } else {
+    renderInfo('none');
+    status('Выберите рабочую папку с портфелями проектов');
+  }
+}
+
+init();
+</script>
+</body>
+</html>
